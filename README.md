@@ -56,6 +56,9 @@ python -m clipper clean --days 3            # delete old downloads
 | `fit` | Whole frame in the middle, blurred copy filling top/bottom. Used automatically when no facecam. |
 | `crop` | Centre of the frame, zoomed to fill the screen. |
 
+If a stream has its own captions burned in, set `frame: [0, 0, 1, 0.88]` (on the streamer or a single
+pick) to crop them off the bottom, or `captions: false` to keep theirs instead of ours.
+
 ## Be a good clipper
 
 These are other people's streams. Credit is added to every clip and `posts.md` automatically; keep it.

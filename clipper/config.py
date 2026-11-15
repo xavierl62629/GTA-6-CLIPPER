@@ -14,6 +14,8 @@ DEFAULTS = {
     "layout": "split",          # split (facecam top / gameplay bottom), fit, or crop
     "facecam": None,            # [x, y, w, h] as fractions of the frame, or null
     "gameplay": None,           # optional [x, y, w, h] region for the bottom half
+    "frame": None,              # optional [x, y, w, h] part of the source to use (crop out burned-in captions)
+    "captions": True,           # False = don't add our captions (e.g. the stream already has good ones)
     "fit_aspect": 1.3333,       # 'fit' layout: crop source to this aspect before placing
     "uppercase": True,
     "words_per_line": 3,

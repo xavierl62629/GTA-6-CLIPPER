@@ -20,7 +20,7 @@ def _even(v: float) -> int:
 
 def _box(frac, sw: int, sh: int) -> tuple[int, int, int, int]:
     x, y, w, h = frac
-    x, y = _even(x * sw), _even(y * sh)
+    x, y = int(round(x * sw / 2)) * 2, int(round(y * sh / 2)) * 2  # positions may be 0
     w, h = min(_even(w * sw), sw - x), min(_even(h * sh), sh - y)
     return x, y, w, h
 
@@ -45,9 +45,12 @@ def effective_layout(cfg: dict) -> str:
 def video_graph(cfg: dict, sw: int, sh: int, subs: str = "captions.ass") -> str:
     layout = effective_layout(cfg)
     tail = f"fps=30,format=yuv420p,subtitles={subs}:fontsdir=fonts[v]"
+    # 'frame' = the part of the source to use at all, e.g. [0, 0, 1, 0.86] cuts off the
+    # bottom 14% (where a streamer's own burned-in captions usually sit)
+    frame = _box(cfg["frame"], sw, sh) if cfg.get("frame") else (0, 0, sw, sh)
     if layout == "split":
         fx, fy, fw, fh = _box(cfg["facecam"], sw, sh)
-        game = _box(cfg["gameplay"], sw, sh) if cfg.get("gameplay") else (0, 0, sw, sh)
+        game = _box(cfg["gameplay"], sw, sh) if cfg.get("gameplay") else frame
         gx, gy, gw, gh = _crop_to_aspect(game, W / GAME_H)
         return (f"[0:v]split=2[a][b];"
                 f"[a]crop={fw}:{fh}:{fx}:{fy},scale={W}:{FACE_H}:force_original_aspect_ratio=increase,"
@@ -55,14 +58,23 @@ def video_graph(cfg: dict, sw: int, sh: int, subs: str = "captions.ass") -> str:
                 f"[b]crop={gw}:{gh}:{gx}:{gy},scale={W}:{GAME_H},setsar=1[game];"
                 f"[face][game]vstack=2,{tail}")
     if layout == "crop":
-        return f"[0:v]scale=-2:{H},crop={W}:{H},setsar=1,{tail}"
+        cx, cy, cw, ch = _crop_to_aspect(frame, W / H)
+        return f"[0:v]crop={cw}:{ch}:{cx}:{cy},scale={W}:{H},setsar=1,{tail}"
     # fit: blurred full-bleed background + the (slightly zoomed) frame in the middle
-    cx, cy, cw, ch = _crop_to_aspect((0, 0, sw, sh), float(cfg.get("fit_aspect", 4 / 3)))
+    cx, cy, cw, ch = _crop_to_aspect(frame, float(cfg.get("fit_aspect", 4 / 3)))
     return (f"[0:v]split=2[a][b];"
-            f"[a]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=24:2,"
-            f"eq=brightness=-0.10,setsar=1[bg];"
+            f"[a]crop={cw}:{ch}:{cx}:{cy},scale={W}:{H}:force_original_aspect_ratio=increase,"
+            f"crop={W}:{H},boxblur=24:2,eq=brightness=-0.10,setsar=1[bg];"
             f"[b]crop={cw}:{ch}:{cx}:{cy},scale={W}:-2,setsar=1[fg];"
             f"[bg][fg]overlay=(W-w)/2:(H-h)/2,{tail}")
+
+
+PER_PICK = ("layout", "frame", "facecam", "gameplay", "captions", "fit_aspect")
+
+
+def clip_cfg(cfg: dict, pick: dict) -> dict:
+    """A pick can override layout settings for just that clip."""
+    return {**cfg, **{k: pick[k] for k in PER_PICK if k in pick}}
 
 
 def _workdir(ass_text: str) -> tempfile.TemporaryDirectory:
@@ -80,7 +92,8 @@ def render_clip(job: Path, pick: dict, cfg: dict, out: Path) -> Path:
     end = min(info["duration"], float(pick["end"]))
     if end - start < 1:
         raise ValueError(f"Pick {pick.get('title')!r} is under a second long ({start}-{end})")
-    words = (load_json(job / "words.json") or {}).get("words", [])
+    cfg = clip_cfg(cfg, pick)
+    words = (load_json(job / "words.json") or {}).get("words", []) if cfg.get("captions", True) else []
     ass = captions.build(words, start, end, cfg, effective_layout(cfg),
                          hook=pick.get("hook"), credit=config.credit_line(cfg))
     out.parent.mkdir(parents=True, exist_ok=True)

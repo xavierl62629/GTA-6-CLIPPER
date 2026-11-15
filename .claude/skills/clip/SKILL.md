@@ -75,12 +75,37 @@ Write the picks to `<batch>/picks.json`:
 ```json
 [
   {"job": "<job folder name>", "start": 12.4, "end": 38.9,
+   "frame": [0, 0, 1, 0.88],
    "hook": "He did NOT see the cops coming",
    "title": "Kai vs the Vice City police",
    "caption": "bro thought he was safe 💀",
    "hashtags": ["#gta6", "#kaicenat"]}
 ]
 ```
+(`frame` is only needed when the source has burned-in captions — see below.)
+
+### Check every picked job for burned-in captions (do this, it's easy to miss)
+
+Many streams show their own live captions, and Twitch clips carry them. Ours on top = two
+transcripts at once, which looks broken. For each job you picked:
+
+1. `.venv/bin/python -m clipper frame <job_dir> --at <a time mid-clip with speech>` and Read it.
+2. If there are captions/subtitles burned into the video, find the highest point they reach
+   (check 2-3 times, they can wrap to two lines) and add to that pick
+   `"frame": [0, 0, 1, Y]` where Y is a little above their top edge (e.g. captions start at
+   0.90 → use 0.88). This crops them out; our captions replace them.
+3. If cropping would cut off something important, instead set `"captions": false` on the pick
+   to keep theirs and skip ours.
+4. If a streamer *always* has captions in the same place, put `frame: [0, 0, 1, Y]` under them
+   in streamers.yaml instead of on every pick.
+
+### Fix mis-heard words
+
+The speech model sometimes mis-hears (crowd noise, cars, music). If you have real evidence
+of the right words (the stream's own captions, the clip title, an obvious name like
+"Big Smoke"), edit those entries in the job's `words.json` — keep the `s`/`e` times and split
+the time span if one wrong word becomes two. Don't guess without evidence; when unsure, start
+the clip after the shaky bit instead.
 
 Show the user your picks as a short table (hook, length, why it's good) before rendering.
 If they're happy (or said to go ahead without checking), continue.
