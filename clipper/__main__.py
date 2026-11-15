@@ -80,15 +80,45 @@ def cmd_review(a):
     print(path)
 
 
-def cmd_prep(a):
-    """fetch + transcribe + review in one go."""
+def _prep_one(key: str, a) -> Path:
     from . import fetch, transcribe
-    cfg = config.get(a.streamer)
-    batch = fetch.fetch(a.streamer, range_=a.range, limit=a.limit, hot=a.hot)
+    cfg = config.get(key)
+    try:
+        batch = fetch.fetch(key, range_=a.range, limit=a.limit, hot=a.hot)
+    except SystemExit as exc:
+        if cfg["platform"] != "twitch" or a.range != "24hr":
+            raise
+        print(f"  {exc}\n  -> trying the last 7 days instead")
+        batch = fetch.fetch(key, range_="7d", limit=a.limit, hot=a.hot)
     for job in jobs_in(batch):
         transcribe.transcribe(job, model=a.model, language=cfg.get("language"))
     a.path = str(batch)
     cmd_review(a)
+    return batch
+
+
+def cmd_prep(a):
+    """fetch + transcribe + review. 'all' = every Twitch streamer."""
+    if a.streamer != "all":
+        _prep_one(a.streamer, a)
+        return
+    done, failed, skipped = [], [], []
+    for key, cfg in config.load().items():
+        if cfg["platform"] != "twitch":
+            skipped.append(f"{key} ({cfg['platform']}: not supported in 'all')")
+            continue
+        print(f"\n=== {cfg['name']} ===")
+        try:
+            done.append(str(_prep_one(key, a) / "review.md"))
+        except (SystemExit, Exception) as exc:
+            failed.append(f"{key}: {exc}")
+    print("\n=== summary ===")
+    for r in done:
+        print(f"ready   {r}")
+    for f in failed:
+        print(f"FAILED  {f}")
+    for k in skipped:
+        print(f"skipped {k}")
 
 
 def cmd_frame(a):
@@ -115,7 +145,16 @@ def cmd_preview(a):
 
 def cmd_render(a):
     from .render import render_batch
-    render_batch(_batch(a.path), Path(a.picks) if a.picks else None)
+    if a.path != "all":
+        render_batch(_batch(a.path), Path(a.picks) if a.picks else None)
+        return
+    today = dt.date.today().isoformat()
+    batches = sorted(b for b in WORK.glob(f"*/{today}") if (b / "picks.json").exists())
+    if not batches:
+        raise SystemExit("No picks.json in any of today's batches.")
+    for b in batches:
+        print(f"\n=== {b.parent.name} ===")
+        render_batch(b)
 
 
 def cmd_clean(a):
@@ -159,7 +198,7 @@ def main():
     sp = sub.add_parser("review", help="find moments, write review.md")
     sp.add_argument("path"); sp.add_argument("--top", type=int, default=6); sp.set_defaults(fn=cmd_review)
 
-    sp = sub.add_parser("prep", help="fetch + transcribe + review in one go")
+    sp = sub.add_parser("prep", help="fetch + transcribe + review in one go ('all' = every Twitch streamer)")
     sp.add_argument("streamer"); fetch_opts(sp)
     sp.add_argument("--model", default=None); sp.add_argument("--top", type=int, default=6)
     sp.set_defaults(fn=cmd_prep)
@@ -176,7 +215,7 @@ def main():
     sp.add_argument("job"); sp.add_argument("--streamer"); sp.add_argument("--at", default="10")
     sp.set_defaults(fn=cmd_preview)
 
-    sp = sub.add_parser("render", help="render picks.json into finished Shorts")
+    sp = sub.add_parser("render", help="render picks.json into finished Shorts ('all' = every batch from today)")
     sp.add_argument("path"); sp.add_argument("--picks"); sp.set_defaults(fn=cmd_render)
 
     sp = sub.add_parser("clean", help="delete old downloads")

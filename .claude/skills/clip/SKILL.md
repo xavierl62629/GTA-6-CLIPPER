@@ -10,9 +10,28 @@ for the creative part: picking moments and writing hooks. Run every command from
 with the venv's Python: `.venv/bin/python -m clipper ...` (on first use, if `.venv` is missing,
 tell the user to run `./setup.sh` and stop).
 
-Arguments: `/clip <streamer>` (a key from streamers.yaml), `/clip <url> <streamer>`, or
-`/clip setup <streamer>`. With no argument, run `.venv/bin/python -m clipper streamers` and ask
+Arguments: `/clip <streamer>` (a key from streamers.yaml), `/clip all`, `/clip <url> <streamer>`,
+or `/clip setup <streamer>`. With no argument, run `.venv/bin/python -m clipper streamers` and ask
 which one.
+
+The user often runs this **from their phone** in a cloud session. They can't open files on this
+machine, so finished videos must be *sent* to them (step 5), and everything you show them should
+read well on a small screen: short messages, no wide tables.
+
+## `/clip all` — one top video per Twitch streamer
+
+1. `.venv/bin/python -m clipper prep all --limit 4` — fetches every Twitch streamer's top clips
+   (last 24h, falling back to 7 days), transcribes them, and prints a summary. YouTube streamers
+   (ishowspeed) are skipped: YouTube blocks cloud downloads. Mention that in one line.
+   A streamer that FAILED shouldn't stop the others; report it at the end.
+2. For each streamer that's ready, read their `review.md` and pick the **single best** clip
+   (step 3 rules), and write a one-item `picks.json` in their batch folder.
+3. Facecams and burned-in captions: same checks as below, per streamer. Do the facecam setup
+   yourself without asking (you can see the frames); the user can't easily review previews on
+   a phone.
+4. Show all picks in one short list (one line each: streamer — hook — length), then render with
+   `.venv/bin/python -m clipper render all` unless the user wants changes.
+5. Deliver every video as in step 5.
 
 ## 1. Facecam setup (once per streamer)
 
@@ -114,10 +133,34 @@ If they're happy (or said to go ahead without checking), continue.
 
 `.venv/bin/python -m clipper render <batch>`
 
-It writes `exports/<streamer>/<date>/NN-title.mp4` plus `posts.md` (the caption text to paste,
-with credit to the streamer). Grab one frame from the first clip to sanity-check it:
+It writes `exports/<streamer>/<date>/NN-title.mp4` plus `posts.md`. Grab one frame from each
+clip to sanity-check it (captions present, only one set of captions, face looks right):
 `ffmpeg -v error -y -ss 2 -i <clip.mp4> -frames:v 1 -vf scale=540:-2 /tmp/check.png`
-and Read it. Then tell the user where the clips are and show the posts.md contents.
+and Read it. Fix and re-render anything that looks wrong before sending.
+
+## 5. Deliver: every video + its caption and hashtags
+
+For **each** video, in order:
+1. Send the .mp4 to the user with your file-sending tool (e.g. SendUserFile), with a short
+   caption like "Kai Cenat — Big Smoke's order IRL (26s)". If you have no such tool (a local
+   terminal session), give the file's path instead.
+2. Right after it, post that video's ready-to-paste social caption as its own code block, so
+   it's one tap to copy on a phone:
+
+```
+he really said two number 9s 💀
+
+🎥 Kai Cenat — twitch.tv/kaicenat
+#gta6 #gtavi #kaicenat #bigsmoke #twitch #fyp
+```
+
+Caption rules: 1 punchy line (max ~80 chars, ≤1 emoji) that teases the moment without
+spoiling it; then the credit line exactly as in posts.md; then **5–8 hashtags**: #gta6 and
+#gtavi, the streamer's tag, 1–3 tags specific to the moment (e.g. #bigsmoke, #vicecity, #cops),
+and 1 broad discovery tag (#fyp or #gaming). Don't invent claims or tag unrelated trends.
+Every video gets its own caption — never one shared caption for a batch.
+
+End with one line summing up (e.g. "4 clips ready. Jynxzi failed: no clips this week.").
 
 ## Troubleshooting
 
@@ -127,5 +170,9 @@ and Read it. Then tell the user where the clips are and show the posts.md conten
 - Subscriber-only VODs can't be downloaded; use their public clips instead.
 - Disk filling up: `.venv/bin/python -m clipper clean --days 3` (keeps exports).
 - Transcription too slow: add `--model base` (faster, a bit less accurate).
+- A download blocked by the network ("Tunnel connection failed: 403") in a cloud session means
+  Twitch moved its video files to a new host. Find it with
+  `.venv/bin/yt-dlp -g <clip url>` and tell the user that host needs adding to the
+  GTA 6 Clipper environment's allowed hosts.
 
 Always keep the credit line; never strip a streamer's watermark or claim the content as the user's.
