@@ -22,21 +22,21 @@ streamers:
     name: Kai Cenat
     platform: twitch
     handle: kaicenat
-    facecam: null
+    facecam: [0.005, 0.25, 0.2, 0.195]
     hashtags: ["#gta6", "#gtavi", "#kaicenat", "#twitch"]
 
   asmongold:
     name: Asmongold
     platform: twitch
     handle: zackrawrr          # Asmongold's main Twitch channel
-    facecam: null
+    facecam: [0.005, 0.62, 0.27, 0.34]
     hashtags: ["#gta6", "#gtavi", "#asmongold", "#twitch"]
 
   xqc:
     name: xQc
     platform: twitch
     handle: xqc
-    facecam: null
+    facecam: [0.005, 0.005, 0.21, 0.3]
     hashtags: ["#gta6", "#gtavi", "#xqc", "#twitch"]
 
   jynxzi:
