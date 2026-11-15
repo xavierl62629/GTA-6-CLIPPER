@@ -31,6 +31,15 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
     return p
 
 
+def run_bytes(cmd: list[str]) -> bytes:
+    """Run a command and return raw stdout (for piping audio out of ffmpeg)."""
+    p = subprocess.run(cmd, capture_output=True)
+    if p.returncode != 0:
+        tail = "\n".join(p.stderr.decode(errors="replace").strip().splitlines()[-15:])
+        raise RuntimeError(f"Command failed ({cmd[0]}):\n{tail}")
+    return p.stdout
+
+
 def probe(path: Path) -> dict:
     """Width, height, duration and whether there's an audio stream."""
     need("ffprobe")

@@ -39,7 +39,7 @@ def chunk(words: list[dict], max_words: int = 3, max_chars: int = 18) -> list[li
 def layout_positions(layout: str) -> dict:
     if layout == "split":
         return {"caption_y": 790, "hook_y": 70}
-    return {"caption_y": 1380, "hook_y": 300}
+    return {"caption_y": 1500, "hook_y": 330}  # fit/crop: in the band below the frame
 
 
 def build(words: list[dict], start: float, end: float, cfg: dict, layout: str,
