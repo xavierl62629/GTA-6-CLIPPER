@@ -1,0 +1,47 @@
+# Streamers to clip. Keys are what you type: /clip kaicenat
+#
+# facecam: where their webcam sits in the stream, as [x, y, width, height]
+#          fractions of the frame (0-1). Leave null until you've set it up:
+#          Claude grabs a frame, looks at it, and fills this in for you.
+#          With no facecam, the 'split' layout falls back to 'fit'.
+
+defaults:
+  layout: split
+  language: en                 # all English streamers; set null to auto-detect
+  hashtags: ["#gta6", "#gtavi", "#gaming"]
+
+streamers:
+  ishowspeed:
+    name: IShowSpeed
+    platform: youtube          # Speed streams on YouTube, not Twitch
+    handle: "@IShowSpeed"
+    facecam: null
+    hashtags: ["#gta6", "#gtavi", "#ishowspeed", "#speed"]
+
+  kaicenat:
+    name: Kai Cenat
+    platform: twitch
+    handle: kaicenat
+    facecam: null
+    hashtags: ["#gta6", "#gtavi", "#kaicenat", "#twitch"]
+
+  asmongold:
+    name: Asmongold
+    platform: twitch
+    handle: zackrawrr          # Asmongold's main Twitch channel
+    facecam: null
+    hashtags: ["#gta6", "#gtavi", "#asmongold", "#twitch"]
+
+  xqc:
+    name: xQc
+    platform: twitch
+    handle: xqc
+    facecam: null
+    hashtags: ["#gta6", "#gtavi", "#xqc", "#twitch"]
+
+  jynxzi:
+    name: Jynxzi
+    platform: twitch
+    handle: jynxzi
+    facecam: null
+    hashtags: ["#gta6", "#gtavi", "#jynxzi", "#twitch"]
