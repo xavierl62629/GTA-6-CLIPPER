@@ -22,7 +22,7 @@ streamers:
     name: Kai Cenat
     platform: twitch
     handle: kaicenat
-    facecam: [0.005, 0.25, 0.2, 0.195]
+    facecam: [0.005, 0.33, 0.195, 0.19]
     hashtags: ["#gta6", "#gtavi", "#kaicenat", "#twitch"]
 
   asmongold:
@@ -36,7 +36,7 @@ streamers:
     name: xQc
     platform: twitch
     handle: xqc
-    facecam: [0.005, 0.005, 0.21, 0.3]
+    facecam: [0.005, 0.005, 0.185, 0.255]
     hashtags: ["#gta6", "#gtavi", "#xqc", "#twitch"]
 
   jynxzi:
