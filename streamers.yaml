@@ -45,3 +45,17 @@ streamers:
     handle: jynxzi
     facecam: null
     hashtags: ["#gta6", "#gtavi", "#jynxzi", "#twitch"]
+
+  theburntpeanut:
+    name: TheBurntPeanut
+    platform: twitch
+    handle: theburntpeanut
+    facecam: null
+    hashtags: ["#gta6", "#gtavi", "#theburntpeanut", "#twitch"]
+
+  lacy:
+    name: Lacy
+    platform: twitch
+    handle: lacy
+    facecam: null
+    hashtags: ["#gta6", "#gtavi", "#lacy", "#twitch"]
