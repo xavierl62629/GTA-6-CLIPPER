@@ -39,6 +39,8 @@ def chunk(words: list[dict], max_words: int = 3, max_chars: int = 18) -> list[li
 def layout_positions(layout: str) -> dict:
     if layout == "split":
         return {"caption_y": 790, "hook_y": 70}
+    if layout == "stack":
+        return {"caption_y": 985, "hook_y": 70}   # on the seam between the video and the filler
     return {"caption_y": 1500, "hook_y": 330}  # fit/crop: in the band below the frame
 
 

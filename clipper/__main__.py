@@ -157,6 +157,67 @@ def cmd_render(a):
         render_batch(b)
 
 
+def cmd_import(a):
+    """Bring in a video file the user sent (when it can't be downloaded here)."""
+    from . import fetch
+    from .util import need, run, save_json, slug
+    need("ffmpeg")
+    src = Path(a.file).expanduser().resolve()
+    if not src.is_file():
+        raise SystemExit(f"No such file: {src}")
+    cfg = config.get(a.streamer)
+    job = fetch.batch_dir(cfg["key"]) / slug(a.title or src.stem, 30)
+    job.mkdir(parents=True, exist_ok=True)
+    out = job / "source.mp4"
+    try:   # remux if the codecs already fit in mp4, else re-encode
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-c", "copy", "-movflags", "+faststart", str(out)])
+    except Exception:
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-c:v", "libx264", "-crf", "18",
+             "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)])
+    save_json(job / "meta.json", {"streamer": cfg["key"], "kind": "video", "url": a.url or "",
+                                  "title": a.title or src.stem})
+    print(f"Imported -> {job}")
+
+
+def _cut_points(words: list[dict]) -> list[tuple[float, float]]:
+    """(time, pause length) after each word: the pauses are where a part can end cleanly."""
+    pts = []
+    for w, nxt in zip(words, words[1:]):
+        gap = float(nxt["s"]) - float(w["e"])
+        bonus = 0.5 if str(w["w"]).rstrip().endswith((".", "?", "!")) else 0.0
+        pts.append(((float(w["e"]) + float(nxt["s"])) / 2, gap + bonus))
+    return pts
+
+
+def cmd_parts(a):
+    """Split a whole video into back-to-back parts of at most --max seconds, cut at pauses."""
+    from .util import probe, save_json
+    job = Path(a.job)
+    dur = probe(job / "source.mp4")["duration"]
+    words = (load_json(job / "words.json") or {}).get("words", [])
+    pts = _cut_points(words)
+    cuts, cur = [], 0.0
+    while dur - cur > a.max:
+        window = [(t, g) for t, g in pts if cur + a.max * 0.6 <= t <= cur + a.max]
+        cur = max(window, key=lambda tg: (tg[1], tg[0]))[0] if window else cur + a.max
+        cuts.append(cur)
+    bounds = [0.0] + cuts + [dur]
+    n = len(bounds) - 1
+    title = a.title or load_json(job / "meta.json", {}).get("title", job.name)
+    picks = []
+    for i in range(n):
+        pick = {"job": job.name, "start": round(bounds[i], 2), "end": round(bounds[i + 1], 2),
+                "hook": f"Part {i + 1}" + (f" of {n}" if n > 1 else ""),
+                "title": f"{title} part {i + 1}", "caption": f"{title} (part {i + 1}/{n})"}
+        if a.filler:
+            pick.update(layout="stack", filler=str(Path(a.filler).resolve()), filler_start=i * 41.0)
+        picks.append(pick)
+    save_json(job.parent / "picks.json", picks)
+    for p_ in picks:
+        print(f"  {p_['hook']:<12} {fmt_time(p_['start'])} - {fmt_time(p_['end'])}  ({p_['end'] - p_['start']:.0f}s)")
+    print(f"Wrote {n} parts -> {job.parent / 'picks.json'} (edit hooks/captions there, then render)")
+
+
 def cmd_clean(a):
     cutoff = time.time() - a.days * 86400
     freed = 0
@@ -217,6 +278,16 @@ def main():
 
     sp = sub.add_parser("render", help="render picks.json into finished Shorts ('all' = every batch from today)")
     sp.add_argument("path"); sp.add_argument("--picks"); sp.set_defaults(fn=cmd_render)
+
+    sp = sub.add_parser("import", help="bring in a local video file (e.g. one the user sent)")
+    sp.add_argument("file"); sp.add_argument("--streamer", required=True)
+    sp.add_argument("--title"); sp.add_argument("--url", help="original link, for posts.md")
+    sp.set_defaults(fn=cmd_import)
+
+    sp = sub.add_parser("parts", help="split a whole video into reel-length parts (writes picks.json)")
+    sp.add_argument("job"); sp.add_argument("--max", type=float, default=90.0, help="max seconds per part (default 90)")
+    sp.add_argument("--filler", help="gameplay video for the bottom half (stack layout), e.g. Subway Surfers")
+    sp.add_argument("--title"); sp.set_defaults(fn=cmd_parts)
 
     sp = sub.add_parser("clean", help="delete old downloads")
     sp.add_argument("--days", type=int, default=3); sp.set_defaults(fn=cmd_clean)
