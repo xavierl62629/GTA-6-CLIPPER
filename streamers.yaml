@@ -15,7 +15,7 @@ streamers:
     name: IShowSpeed
     platform: youtube          # Speed streams on YouTube, not Twitch
     handle: "@IShowSpeed"
-    facecam: null
+    facecam: [0.003, 0.43, 0.195, 0.215]
     hashtags: ["#gta6", "#gtavi", "#ishowspeed", "#speed"]
 
   kaicenat:
@@ -57,7 +57,7 @@ streamers:
     name: Lacy
     platform: twitch
     handle: lacy
-    facecam: null
+    facecam: [0.005, 0.005, 0.25, 0.245]
     hashtags: ["#gta6", "#gtavi", "#lacy", "#twitch"]
 
   caseoh:
