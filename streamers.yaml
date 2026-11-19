@@ -15,28 +15,28 @@ streamers:
     name: IShowSpeed
     platform: youtube          # Speed streams on YouTube, not Twitch
     handle: "@IShowSpeed"
-    facecam: null
+    facecam: [0.003, 0.43, 0.195, 0.215]
     hashtags: ["#gta6", "#gtavi", "#ishowspeed", "#speed"]
 
   kaicenat:
     name: Kai Cenat
     platform: twitch
     handle: kaicenat
-    facecam: null
+    facecam: [0.005, 0.33, 0.195, 0.19]
     hashtags: ["#gta6", "#gtavi", "#kaicenat", "#twitch"]
 
   asmongold:
     name: Asmongold
     platform: twitch
     handle: zackrawrr          # Asmongold's main Twitch channel
-    facecam: null
+    facecam: [0.005, 0.62, 0.27, 0.34]
     hashtags: ["#gta6", "#gtavi", "#asmongold", "#twitch"]
 
   xqc:
     name: xQc
     platform: twitch
     handle: xqc
-    facecam: null
+    facecam: [0.005, 0.005, 0.185, 0.255]
     hashtags: ["#gta6", "#gtavi", "#xqc", "#twitch"]
 
   jynxzi:
@@ -45,3 +45,24 @@ streamers:
     handle: jynxzi
     facecam: null
     hashtags: ["#gta6", "#gtavi", "#jynxzi", "#twitch"]
+
+  theburntpeanut:
+    name: TheBurntPeanut
+    platform: twitch
+    handle: theburntpeanut
+    facecam: null
+    hashtags: ["#gta6", "#gtavi", "#theburntpeanut", "#twitch"]
+
+  lacy:
+    name: Lacy
+    platform: twitch
+    handle: lacy
+    facecam: [0.005, 0.005, 0.25, 0.245]
+    hashtags: ["#gta6", "#gtavi", "#lacy", "#twitch"]
+
+  caseoh:
+    name: CaseOh
+    platform: twitch
+    handle: caseoh_
+    facecam: [0.003, 0.135, 0.205, 0.26]
+    hashtags: ["#gta6", "#gtavi", "#caseoh", "#twitch"]

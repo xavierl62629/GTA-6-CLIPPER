@@ -176,3 +176,14 @@ End with one line summing up (e.g. "4 clips ready. Jynxzi failed: no clips this 
   GTA 6 Clipper environment's allowed hosts.
 
 Always keep the credit line; never strip a streamer's watermark or claim the content as the user's.
+
+## Whole video in parts with filler gameplay (e.g. Subway Surfers underneath)
+
+When the user wants a whole video cut into reel-length parts with gameplay running below:
+1. Get the video: `fetch-url <url> --streamer <key>` if it downloads; YouTube usually doesn't from
+   the cloud, so ask the user to send the file, then
+   `.venv/bin/python -m clipper import <file> --streamer <key> --title "<short title>" --url <original link>`.
+   (Add the video's creator to streamers.yaml first so the credit line is right.)
+2. The filler gameplay must be a file the user provides (their own recording). Never invent or fetch one.
+3. `transcribe <batch>`, then `parts <job_dir> --max 90 --filler <filler.mp4>` writes picks.json with
+   back-to-back parts cut at pauses ("Part 1 of N" hooks). Edit captions there if wanted, then `render <batch>`.

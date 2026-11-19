@@ -11,7 +11,7 @@ from .util import ROOT
 CONFIG = Path(os.environ.get("CLIPPER_CONFIG", ROOT / "streamers.yaml"))
 
 DEFAULTS = {
-    "layout": "split",          # split (facecam top / gameplay bottom), fit, or crop
+    "layout": "split",          # split (facecam top / gameplay bottom), fit, crop, or stack (video top / filler below)
     "facecam": None,            # [x, y, w, h] as fractions of the frame, or null
     "gameplay": None,           # optional [x, y, w, h] region for the bottom half
     "frame": None,              # optional [x, y, w, h] part of the source to use (crop out burned-in captions)

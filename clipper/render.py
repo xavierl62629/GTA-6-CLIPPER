@@ -12,6 +12,7 @@ from .util import EXPORTS, FONTS, fmt_time, load_json, need, probe, run, save_js
 W, H = 1080, 1920
 FACE_H = 768            # split layout: facecam band on top
 GAME_H = H - FACE_H     # gameplay band below
+STACK_H = 960           # stack layout: the video on top, filler gameplay (e.g. Subway Surfers) below
 
 
 def _even(v: float) -> int:
@@ -57,6 +58,13 @@ def video_graph(cfg: dict, sw: int, sh: int, subs: str = "captions.ass") -> str:
                 f"crop={W}:{FACE_H},setsar=1[face];"
                 f"[b]crop={gw}:{gh}:{gx}:{gy},scale={W}:{GAME_H},setsar=1[game];"
                 f"[face][game]vstack=2,{tail}")
+    if layout == "stack":
+        # top: the source, cropped to the band; bottom: looping filler gameplay (input 1), muted
+        tx, ty, tw, th = _crop_to_aspect(frame, W / STACK_H)
+        return (f"[0:v]crop={tw}:{th}:{tx}:{ty},scale={W}:{STACK_H},setsar=1[top];"
+                f"[1:v]scale={W}:{H - STACK_H}:force_original_aspect_ratio=increase,"
+                f"crop={W}:{H - STACK_H},setsar=1,fps=30[fill];"
+                f"[top][fill]vstack=inputs=2:shortest=1,{tail}")
     if layout == "crop":
         cx, cy, cw, ch = _crop_to_aspect(frame, W / H)
         return f"[0:v]crop={cw}:{ch}:{cx}:{cy},scale={W}:{H},setsar=1,{tail}"
@@ -69,7 +77,7 @@ def video_graph(cfg: dict, sw: int, sh: int, subs: str = "captions.ass") -> str:
             f"[bg][fg]overlay=(W-w)/2:(H-h)/2,{tail}")
 
 
-PER_PICK = ("layout", "frame", "facecam", "gameplay", "captions", "fit_aspect")
+PER_PICK = ("layout", "frame", "facecam", "gameplay", "captions", "fit_aspect", "filler", "filler_start")
 
 
 def clip_cfg(cfg: dict, pick: dict) -> dict:
@@ -100,11 +108,20 @@ def render_clip(job: Path, pick: dict, cfg: dict, out: Path) -> Path:
     with _workdir(ass) as tmp:
         cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.3f}", "-t", f"{end - start:.3f}",
                "-i", str((job / "source.mp4").resolve())]
+        if effective_layout(cfg) == "stack":
+            filler = Path(cfg.get("filler") or "")
+            if not filler.is_file():
+                raise ValueError("stack layout needs 'filler': a gameplay video file for the bottom half")
+            # each part starts somewhere else in the filler so the parts don't look identical
+            fstart = float(cfg.get("filler_start", 0)) % max(1.0, probe(filler)["duration"] - 1)
+            cmd += ["-stream_loop", "-1", "-ss", f"{fstart:.3f}", "-t", f"{end - start:.3f}",
+                    "-i", str(filler.resolve())]
         if info["has_audio"]:
             audio = "[0:a]loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000[aout]"
         else:
+            silent = 2 if effective_layout(cfg) == "stack" else 1
             cmd += ["-f", "lavfi", "-t", f"{end - start:.3f}", "-i", "anullsrc=r=48000:cl=stereo"]
-            audio = "[1:a]anull[aout]"
+            audio = f"[{silent}:a]anull[aout]"
         graph = video_graph(cfg, info["width"], info["height"]) + ";" + audio
         cmd += ["-filter_complex", graph, "-map", "[v]", "-map", "[aout]",
                 "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-profile:v", "high",
